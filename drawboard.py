@@ -3,7 +3,7 @@ from kivy.uix.widget import Widget
 from kivy.graphics import Color, Line, Ellipse
 
 
-class Node:
+class Point:
 
     def __init__(self, x=0, y=0):
         self.x = x
@@ -18,11 +18,11 @@ class Node:
                     size=(self.width, self.width))
 
 
-class Arc:
+class Segment:
 
     def __init__(self, x1, y1, x2, y2):
-        self.p1 = Node(x1, y1)
-        self.p2 = Node(x2, y2)
+        self.p1 = Point(x1, y1)
+        self.p2 = Point(x2, y2)
         self.color = (1, 1, 1)
         self.width = 1
 
@@ -58,31 +58,39 @@ class Arc:
 class Tree:
 
     def __init__(self):
+        self.age = 0
         self.pos = 400
         self.stem_len = 100
         self.branch_len = 20
-        self.angle = 30
+        self.angle = 45
         self.thickness = 2
         self.color = (0, 1, 0)
         self.branches = []
 
-    def get_left_branch(self, branch):
-        a = branch.get_angle() + self.angle / 2
-        dx = self.branch_len * math.cos(a)
-        dy = self.branch_len * math.sin(a)
-        return Arc(branch.p2.x, branch.p2.y, branch.p2.x + dx, branch.p2.y + dy)
+    def get_new_branch(self, branch, direction):
+        a = branch.get_angle() + direction * self.angle / 2
+        dx = self.branch_len * math.cos(a / 180 * math.pi)
+        dy = self.branch_len * math.sin(a / 180 * math.pi)
+        b = Segment(branch.p2.x, branch.p2.y, branch.p2.x + dx, branch.p2.y + dy)
+        b.color = self.color
+        b.width = self.thickness
+        return b
 
-    def get_right_branch(self, branch):
-        a = branch.get_angle() - self.angle / 2
-        dx = self.branch_len * math.cos(a)
-        dy = self.branch_len * math.sin(a)
-        return Arc(branch.p2.x, branch.p2.y, branch.p2.x + dx, branch.p2.y + dy)
-
-    def grow(self):
-        stem = Arc(self.pos, 0, self.pos, self.stem_len)
-        stem.color = self.color
-        stem.width = self.thickness
-        self.branches.append(stem)
+    def grow(self, ages=1):
+        for i in range(ages):
+            if not self.branches:
+                stem = Segment(self.pos, 0, self.pos, self.stem_len)
+                stem.color = self.color
+                stem.width = self.thickness
+                self.branches.append(stem)
+            else:
+                new_branches = []
+                for b in self.branches:
+                    new_branches.append(self.get_new_branch(b, -1))
+                    new_branches.append(self.get_new_branch(b, +1))
+                self.branches += new_branches
+            self.age += 1
+        return self
 
     def draw(self, canvas):
         for b in self.branches:
@@ -107,6 +115,9 @@ class DrawBoard(Widget):
         i = self.figures.index(fig)
         if i > 0:
             self.figures[i - 1], self.figures[i] = self.figures[i], self.figures[i - 1]
+
+    def remove(self, fig):
+        self.figures.remove(fig)
 
     def paint(self):
         self.canvas.clear()

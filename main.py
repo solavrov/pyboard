@@ -9,7 +9,7 @@ class MyApp(App):
         b = DrawBoard()
 
         t = Tree()
-        t.grow()
+        t.grow(10)
         b.add(t)
 
         b.paint()
